@@ -11,13 +11,18 @@ import (
 
 func ConnectDB() *gorm.DB {
 
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Print("cant find the .env")
+	}
 
 	DbHost := os.Getenv("DB_HOST")
 	DbUser := os.Getenv("DB_USER")
 	DbPassword := os.Getenv("DB_PASSWORD")
+	DbName := os.Getenv("DB_NAME")
+	DbPort := os.Getenv("DB_PORT")
 
-	Db_Url := "host=" + DbHost + " user=" + DbUser + " password=" + DbPassword + " dbname=db_go port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	Db_Url := "host=" + DbHost + " user=" + DbUser + " password=" + DbPassword + " dbname=" + DbName + " port=" + DbPort + " sslmode=disable TimeZone=Asia/Shanghai"
 	dsn := Db_Url
 	db, err := gorm.Open(postgres.Open(dsn))
 	if err != nil {
