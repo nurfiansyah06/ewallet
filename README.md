@@ -18,10 +18,6 @@ go get -u github.com/gin-gonic/gin
 
 ![Screenshot](https://user-images.githubusercontent.com/11155743/112715187-07dab100-8ef0-11eb-97ea-68d34f2178f6.png)
 
-## 🗄 Template structure
-
-
-### ./docs
 
 **Folder with API Documentation**. This directory contains config files for auto-generated API Docs by Swagger.
 
