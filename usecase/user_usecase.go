@@ -16,6 +16,7 @@ type Usecase interface {
 	Register(user dto.UserRequest) (entity.User, error)
 	IsEmailTaken(email string) (bool, error)
 	Login(user dto.UserLoginRequest) (string, error)
+	ResetPassword(email, newPassword string) error
 }
 
 type usecase struct {
@@ -58,4 +59,13 @@ func (u *usecase) Login(user dto.UserLoginRequest) (string, error) {
 
 	token, _ := middleware.GenerateToken(60000, userLogin.UserId, os.Getenv("TOKEN_SECRET"))
 	return token, nil
+}
+
+func (u *usecase) ResetPassword(email, newPassword string) error {
+	user, err := u.repository.FindByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	return u.repository.UpdatePassword(user, newPassword)
 }

@@ -19,6 +19,7 @@ func SetupRoutes() {
 
 	router.POST("/register", userHandler.Register)
 	router.POST("/login", userHandler.Login)
+	router.POST("/reset", userHandler.ResetPassword)
 
 	router.Run(":8888")
 }

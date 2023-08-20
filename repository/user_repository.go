@@ -4,6 +4,7 @@ import (
 	"ewalletgolang/dto"
 	"ewalletgolang/entity"
 	"ewalletgolang/helper"
+	"log"
 
 	"gorm.io/gorm"
 )
@@ -12,6 +13,8 @@ type Repository interface {
 	Register(user dto.UserRequest) (entity.User, error)
 	IsEmailTaken(email string) (bool, error)
 	FindByEmail(email string) (entity.User, error)
+	ResetPassword(email string, newPassword string) error
+	UpdatePassword(user entity.User, newPassword string) error
 }
 
 type repository struct {
@@ -32,7 +35,23 @@ func (r *repository) Register(user dto.UserRequest) (entity.User, error) {
 	}
 
 	err := r.db.Create(&newUser).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	currentAutoIncrement := 1
 	
+	newWallet := entity.Wallet{
+		WalletNumber: generateWalletNumber(777, currentAutoIncrement),
+		Amount: 0,
+		UserId:       newUser.UserId,
+	}
+
+	err = r.db.Create(&newWallet).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return newUser, err
 }
 
@@ -48,6 +67,23 @@ func (r *repository) IsEmailTaken(email string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func generateWalletNumber(prefix int, currentAutoIncrement int) int {
+	return prefix*1000000000000 + currentAutoIncrement
+}
+
+func (r *repository) ResetPassword(email, newPassword string) error {
+	user, err := r.FindByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	return r.UpdatePassword(user, newPassword)
+}
+
+func (r *repository) UpdatePassword(user entity.User, newPassword string) error {
+	return r.db.Model(user).Update("password", newPassword).Error
 }
 
 func (r *repository) FindByEmail(email string) (entity.User, error) {
