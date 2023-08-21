@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"errors"
 	"ewalletgolang/dto"
 	"ewalletgolang/helper"
 	"ewalletgolang/usecase"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -61,20 +61,13 @@ func (h *userHandler) Login(c *gin.Context) {
 	err := c.ShouldBindJSON(&loginRequest)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"err": err,
+			"err": "cant binding",
 		})
+		return
 	}
 
-	var ErrUserNotFound = errors.New("user not found")
 	token, err := h.userUsecase.Login(loginRequest)
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "User not found",
-			})
-			return
-		}
-
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Email or password is not correct",
 		})
@@ -108,4 +101,24 @@ func (h *userHandler) ResetPassword(c *gin.Context)  {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Password reset successfully"})
+}
+
+func (h *userHandler) FindUserById(c *gin.Context) {
+	// var user entity.User
+	userId := c.Param("id")
+
+	intUser, _ := strconv.Atoi(userId)
+	user, err := h.userUsecase.FindUserById(intUser)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "User not found",
+		})
+		return
+		
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"response": "success",
+		"data": user,
+	})
 }

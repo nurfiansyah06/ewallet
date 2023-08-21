@@ -10,8 +10,3 @@ type User struct {
 	CreatedAt time.Time	`json:"created_at"`
 	UpdatedAt time.Time	`json:"updated_at"`
 }
-
-type UserResponse struct {
-	TokenType string `json:"token_type"`
-	Token     string `json:"token"`
-}

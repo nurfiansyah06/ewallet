@@ -1,9 +1,15 @@
 package middleware
 
 import (
+	"ewalletgolang/repository"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -35,6 +41,8 @@ func ValidateToken(token string, signedJWT string) (interface{}, error) {
 		return []byte(signedJWT), nil
 	})
 
+	fmt.Println(err.Error())
+
 	if err != nil {
 		return nil, fmt.Errorf("invalid token %w", err)
 	}
@@ -45,4 +53,44 @@ func ValidateToken(token string, signedJWT string) (interface{}, error) {
 	}
 
 	return claims["sub"], nil
+}
+
+func DeserializeUser(userRepository repository.Repository) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var token string
+		authorizationHeader := ctx.Request.Header.Get("Authorization")
+		fields := strings.Fields(authorizationHeader)
+
+		if len(fields) != 0 && fields[0] == "Bearer" {
+			token = fields[1]
+		}
+
+		if token == "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+			return
+		}
+
+		tokenSecret := os.Getenv("TOKEN_SECRET")
+		sub, err := ValidateToken(token, tokenSecret)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
+			return
+		}
+
+		id, err := strconv.Atoi(fmt.Sprint(sub))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
+			return
+		}
+		
+		result, err := userRepository.FindUserById(id)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no logger exists"})
+			return
+		}
+
+		ctx.Set("currentUser", result.Name)
+		ctx.Next()
+
+	}
 }

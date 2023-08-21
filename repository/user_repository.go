@@ -15,6 +15,7 @@ type Repository interface {
 	FindByEmail(email string) (entity.User, error)
 	ResetPassword(email string, newPassword string) error
 	UpdatePassword(user entity.User, newPassword string) error
+	FindUserById(userId int) (entity.User, error)
 }
 
 type repository struct {
@@ -90,6 +91,17 @@ func (r *repository) FindByEmail(email string) (entity.User, error) {
 	var user entity.User
 	
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
+func (r *repository) FindUserById(userId int) (entity.User, error) {
+	var user entity.User
+
+	err := r.db.Where("user_id = ?", userId).First(&user).Error
+	if err != nil {
 		return user, err
 	}
 
