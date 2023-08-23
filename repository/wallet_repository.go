@@ -1,14 +1,16 @@
 package repository
 
 import (
+	"ewalletgolang/dto"
 	"ewalletgolang/entity"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
 type WalletRepository interface {
 	GenerateNumberAcoount(wallet entity.Wallet) (entity.Wallet, error)
-	TopUpWallet(wallet entity.Wallet) (entity.Wallet, error)
+	TopUpWallet(wallet dto.Wallet) (dto.Wallet, error)
 }
 
 func NewWalletRepository(db *gorm.DB) *repository {
@@ -20,14 +22,18 @@ func (r *repository) GenerateNumberAcoount(wallet entity.Wallet) (entity.Wallet,
 	return wallet, err
 }
 
-func (r *repository) TopUpWallet(wallet entity.Wallet) (entity.Wallet, error) {
-	var user entity.User
+func (r *repository) TopUpWallet(wallet dto.Wallet) (dto.Wallet, error) {	
+	updatedWallet := dto.Wallet{
+		WalletId:    wallet.WalletId,
+		Amount:      wallet.Amount,
+		SourceFund:  wallet.SourceFund,
+	}
 	
-	updatedWallet := entity.Wallet{
-        Amount:       wallet.Amount,
-        SourceFund:   wallet.SourceFund,
-    }
+	result := r.db.Model(&dto.Wallet{}).Where("wallet_id = ?", wallet.WalletId).Updates(updatedWallet)
+	if result.Error != nil {
+		fmt.Println("Error updating wallet:", result.Error)
+		return dto.Wallet{}, result.Error
+	}
 
-    err := r.db.Model(&wallet).Where("user_id = ?", user.UserId).Updates(updatedWallet).Error
-    return updatedWallet, err
+	return updatedWallet, result.Error
 }

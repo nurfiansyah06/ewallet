@@ -3,6 +3,7 @@ package routes
 import (
 	"ewalletgolang/db"
 	"ewalletgolang/handler"
+	"ewalletgolang/middleware"
 	"ewalletgolang/repository"
 	"ewalletgolang/usecase"
 	"net/http"
@@ -31,8 +32,8 @@ func SetupRoutes() {
 	router.POST("/login", userHandler.Login)
 	router.POST("/reset", userHandler.ResetPassword)
 
-	router.GET("/user/:id", userHandler.FindUserById)
-	router.POST("/topup/:id", walletHandler.TopUpWallet)
+	router.GET("/user/:id", middleware.AuthMiddleware(), userHandler.FindUserById)
+	router.PUT("/topup/:wallet_id", walletHandler.TopUpWallet)
 
 	router.Run(":8888")
 }

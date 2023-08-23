@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func ConnectDB() *gorm.DB {
@@ -23,7 +24,10 @@ func ConnectDB() *gorm.DB {
 	DbPort := os.Getenv("DB_PORT")
 
 	db_url := "host=" + DbHost + " user=" + DbUser + " password=" + DbPassword + " dbname=" + DbName + " port=" + DbPort + " sslmode=disable TimeZone=Asia/Shanghai"
-	db, err := gorm.Open(postgres.Open(db_url))
+	db, err := gorm.Open(postgres.Open(db_url), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	
 	if err != nil {
 		log.Fatal(err)
 	}

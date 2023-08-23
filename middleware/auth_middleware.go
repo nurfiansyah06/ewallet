@@ -94,3 +94,48 @@ func DeserializeUser(userRepository repository.Repository) gin.HandlerFunc {
 
 	}
 }
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
+			return
+		}
+
+		tokenString := strings.Split(authHeader, " ")[1]
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// In a real-world scenario, replace with a secure secret
+			return []byte(os.Getenv("TOKEN_SECRET")), nil
+		})
+
+		fmt.Println("Token String:", tokenString) 
+
+		if err != nil || !token.Valid {
+			fmt.Println("Error verifying token:", err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || !token.Valid {
+			fmt.Println("Error extracting claims from token")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+
+		email, ok := claims["email"].(string)
+		if !ok {
+			fmt.Println("Error extracting email from claims")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+
+		fmt.Println("Claims:", claims)
+		c.Set("email", email)
+		c.Next()
+	}
+}
+
+

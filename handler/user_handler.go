@@ -6,10 +6,13 @@ import (
 	"ewalletgolang/usecase"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
+	"github.com/golang-jwt/jwt"
 )
 
 type userHandler struct {
@@ -66,17 +69,19 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.userUsecase.Login(loginRequest)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Email or password is not correct",
-		})
-		return
-	}
-	
+	email := loginRequest.Email
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "username": email,
+        "exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expiration time
+    })
+
+    // In a real-world scenario, replace with a secure secret
+    tokenString, _ := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
+
+    // c.JSON(http.StatusOK, gin.H{"token": tokenString})
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
-		"token": token,
+		"token": tokenString,
 	})
 }
 

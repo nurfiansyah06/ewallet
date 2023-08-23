@@ -19,25 +19,22 @@ func NewWalletHandler(usecase usecase.WalletUsecase) *walletHandler {
 }
 
 func (h *walletHandler) TopUpWallet(c *gin.Context) {
-	var newWallet dto.WalletRequest
+	var wallet dto.Wallet
 
-	if err := c.ShouldBindJSON(&newWallet); err != nil {
+	if err := c.ShouldBindJSON(&wallet); err != nil {
 		fmt.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	walletId := c.Param("id")
-
-	walletIntId, _ := strconv.Atoi(walletId)
-
-	walletUpdate := dto.WalletRequest{
-		WalletId:         walletIntId,
-		Amount:     newWallet.Amount,
-		SourceFund: newWallet.SourceFund,
+	
+	walletId, _ := strconv.Atoi(c.Param("wallet_id"))
+	newWallets := dto.Wallet{
+		WalletId: walletId,
+		Amount: wallet.Amount,
+		SourceFund: wallet.SourceFund,
 	}
 
-	wallet, err := h.walletUsecase.TopUpWallet(walletUpdate)
+	newWallet, err := h.walletUsecase.TopUpWallet(newWallets)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -47,6 +44,36 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"response": "success",
-		"wallet":   wallet,
+		"wallet":    newWallet,
 	})
+
+// 	walletId := c.Param("id")
+
+// 	walletIntId, _ := strconv.Atoi(walletId)
+
+// 	walletUpdate := dto.WalletRequest{
+// 		WalletId:         walletIntId,
+// 		Amount:     newWallet.Amount,
+// 		SourceFund: newWallet.SourceFund,
+// 	}
+
+// 	walletResponse := dto.WalletResponse{
+// 		WalletId: walletIntId,
+// 		Amount: newWallet.Amount,
+// 		SourceFund: newWallet.SourceFund,
+// 	}
+
+// 	wallet, err := h.walletUsecase.TopUpWallet(walletResponse)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{
+// 			"error": err,
+// 		})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusCreated, gin.H{
+// 		"response": "success",
+// 		"wallet":   wallet,
+// 	})
+// }
 }
