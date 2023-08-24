@@ -23,9 +23,13 @@ func (r *repository) GenerateNumberAcoount(wallet entity.Wallet) (entity.Wallet,
 }
 
 func (r *repository) TopUpWallet(wallet dto.Wallet) (dto.Wallet, error) {	
+	var amountWallet entity.Wallet
+
+	r.db.First(&amountWallet, "wallet_id = ?", wallet.WalletId)
+
 	updatedWallet := dto.Wallet{
 		WalletId:    wallet.WalletId,
-		Amount:      wallet.Amount,
+		Amount:      amountWallet.Amount + wallet.Amount,
 		SourceFund:  wallet.SourceFund,
 	}
 	
