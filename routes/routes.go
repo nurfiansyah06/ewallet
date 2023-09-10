@@ -18,9 +18,14 @@ func SetupRoutes() {
 	userRepository := repository.NewRepository(db)
 	userUsecase := usecase.NewUsecase(userRepository)
 	userHandler := handler.NewUserHandler(userUsecase)
+	
 	walletRepository := repository.NewWalletRepository(db)
 	walletUsecase := usecase.NewWalletUsecase(walletRepository)
 	walletHandler := handler.NewWalletHandler(walletUsecase)
+
+	transactionRepository := repository.NewRepository(db)
+	transactionUsecase := usecase.NewTransactionUsecase(transactionRepository)
+	transactionHandler := handler.NewTransactionHandler(transactionUsecase)
 
 	router.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{
@@ -32,8 +37,9 @@ func SetupRoutes() {
 	router.POST("/login", userHandler.Login)
 	router.POST("/reset", userHandler.ResetPassword)
 
-	router.GET("/user/:id", middleware.AuthMiddleware(), userHandler.FindUserById)
-	router.PUT("/topup/:wallet_id", walletHandler.TopUpWallet)
+	router.GET("/profile", middleware.Authenticate(), userHandler.FindUserById)
+	router.PUT("/topup/:wallet_id", middleware.Authenticate(), walletHandler.TopUpWallet)
+	router.POST("/transaction/:id", transactionHandler.AddAmount)
 
 	router.Run(":8888")
 }

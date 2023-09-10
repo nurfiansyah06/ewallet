@@ -2,13 +2,13 @@ package handler
 
 import (
 	"ewalletgolang/dto"
+	"ewalletgolang/entity"
 	"ewalletgolang/helper"
+	"ewalletgolang/middleware"
 	"ewalletgolang/usecase"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -16,10 +16,10 @@ import (
 )
 
 type userHandler struct {
-	userUsecase	usecase.Usecase
+	userUsecase	usecase.UserUsecase
 }
 
-func NewUserHandler(usecase usecase.Usecase) *userHandler {
+func NewUserHandler(usecase usecase.UserUsecase) *userHandler {
 	return &userHandler{usecase}
 }
 
@@ -69,19 +69,39 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
-	email := loginRequest.Email
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-        "username": email,
-        "exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expiration time
-    })
+	loggedUser, err := h.userUsecase.Login(loginRequest)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"err": err,
+		})
+	}
+
+	userId, err := h.userUsecase.FindUserById(loggedUser.UserId)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"err": err,
+		})
+	}
+
+	// user_id := loginRequest.
+    // token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+    //     "user_id": email,
+    //     "exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expiration time
+    // })
 
     // In a real-world scenario, replace with a secure secret
-    tokenString, _ := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
+    // tokenString, _ := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 
+	token, err := middleware.AuthMiddleware(userId.UserId)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"err": err,
+		})
+	}
     // c.JSON(http.StatusOK, gin.H{"token": tokenString})
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
-		"token": tokenString,
+		"token": token,
 	})
 }
 
@@ -109,21 +129,66 @@ func (h *userHandler) ResetPassword(c *gin.Context)  {
 }
 
 func (h *userHandler) FindUserById(c *gin.Context) {
-	// var user entity.User
-	userId := c.Param("id")
+	var user entity.User
 
-	intUser, _ := strconv.Atoi(userId)
-	user, err := h.userUsecase.FindUserById(intUser)
+	// Retrieve and check the user_id claim from the JWT claims
+	claimsRaw, ok := c.Get("claims")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "JWT claims not found in context",
+		})
+		return
+	}
+
+	claims, ok := claimsRaw.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid JWT claims format in context",
+		})
+		return
+	}
+
+	userIdRaw, ok := claims["user_id"]
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID not found in JWT claims",
+		})
+		return
+	}
+
+	var userIdStr string
+	switch userId := userIdRaw.(type) {
+	case float64:
+		// Convert float64 to string
+		userIdStr = strconv.FormatFloat(userId, 'f', -1, 64)
+	case string:
+		// Use the string as is
+		userIdStr = userId
+	default:
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID in JWT claims is not a valid type",
+		})
+		return
+	}
+
+	userIdInt, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid User ID format in JWT claims",
+		})
+		return
+	}
+	
+	user, err = h.userUsecase.FindUserById(userIdInt)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "User not found",
 		})
 		return
-		
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
-		"data": user,
+		"data":     user,
 	})
 }

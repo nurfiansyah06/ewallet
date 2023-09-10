@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"errors"
+	"ewalletgolang/db"
 	"ewalletgolang/repository"
+	"ewalletgolang/usecase"
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,110 +34,81 @@ func GenerateToken(ttl time.Duration, payload interface{}, secretJWT string) (st
 	return tokenString, nil
 }
 
-func ValidateToken(token string, signedJWT string) (interface{}, error) {
-	tokenString, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected method: %s", t.Header["alg"])
+func ValidateToken(encodedToken string) (*jwt.Token, error) {
+	token, err := jwt.Parse(encodedToken, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+
+		if !ok {
+			return nil, errors.New("invalid token")
 		}
 
-		return []byte(signedJWT), nil
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 
-	fmt.Println(err.Error())
-
 	if err != nil {
-		return nil, fmt.Errorf("invalid token %w", err)
+		return token, err
 	}
 
-	claims, ok := tokenString.Claims.(jwt.MapClaims)
-	if !ok || !tokenString.Valid {
-		return nil, fmt.Errorf("invalid token claim")
-	}
-
-	return claims["sub"], nil
+	return token, nil
 }
 
-func DeserializeUser(userRepository repository.Repository) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var token string
-		authorizationHeader := ctx.Request.Header.Get("Authorization")
-		fields := strings.Fields(authorizationHeader)
+func AuthMiddleware(userId int) (string, error) {
+	claim := jwt.MapClaims{}
+	claim["user_id"] = userId
 
-		if len(fields) != 0 && fields[0] == "Bearer" {
-			token = fields[1]
-		}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
 
-		if token == "" {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-			return
-		}
-
-		tokenSecret := os.Getenv("TOKEN_SECRET")
-		sub, err := ValidateToken(token, tokenSecret)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
-			return
-		}
-
-		id, err := strconv.Atoi(fmt.Sprint(sub))
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
-			return
-		}
-		
-		result, err := userRepository.FindUserById(id)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no logger exists"})
-			return
-		}
-
-		ctx.Set("currentUser", result.Name)
-		ctx.Next()
-
+	signedToken, err := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
+	if err != nil {
+		return signedToken, err
 	}
+
+	return signedToken, nil
 }
 
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
+func Authenticate() gin.HandlerFunc {
+    return func(c *gin.Context) {
+       authHeader := c.GetHeader("Authorization")
+
+	   if !strings.Contains(authHeader, "Bearer") {
+		   c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+		   return
+	   }
+
+	   tokenString := ""
+	   resultToken := strings.Split(authHeader, " ")
+	   if len(resultToken) == 2 {
+			tokenString	= resultToken[1]
+	   }
+
+	   token, err := ValidateToken(tokenString)
+	   if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
 			return
-		}
+	   }
 
-		tokenString := strings.Split(authHeader, " ")[1]
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// In a real-world scenario, replace with a secure secret
-			return []byte(os.Getenv("TOKEN_SECRET")), nil
-		})
-
-		fmt.Println("Token String:", tokenString) 
-
-		if err != nil || !token.Valid {
-			fmt.Println("Error verifying token:", err)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+	   claim, ok := token.Claims.(jwt.MapClaims)
+	   if !ok || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
 			return
-		}
+	   }
 
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || !token.Valid {
-			fmt.Println("Error extracting claims from token")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+	   userId := int(claim["user_id"].(float64))
+
+	   db := db.ConnectDB()
+
+	   userRepo := repository.NewRepository(db)
+	   userUsecase := usecase.NewUsecase(userRepo)
+	   user, err := usecase.UserUsecase.FindUserById(userUsecase, userId)
+
+	   if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
 			return
-		}
+	   }
 
-		email, ok := claims["email"].(string)
-		if !ok {
-			fmt.Println("Error extracting email from claims")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
-			return
-		}
+	   c.Set("currentUser", user)
+	   c.Set("claims", claim)
 
-		fmt.Println("Claims:", claims)
-		c.Set("email", email)
-		c.Next()
+	   c.Next()
 	}
 }
-
-

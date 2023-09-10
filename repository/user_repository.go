@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"ewalletgolang/dto"
 	"ewalletgolang/entity"
 	"ewalletgolang/helper"
@@ -102,7 +103,7 @@ func (r *repository) FindUserById(userId int) (entity.User, error) {
 
 	err := r.db.Where("user_id = ?", userId).First(&user).Error
 	if err != nil {
-		return user, err
+		return user, errors.New("no user found on with that ID")
 	}
 
 	return user, nil
