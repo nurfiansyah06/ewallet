@@ -131,7 +131,6 @@ func (h *userHandler) ResetPassword(c *gin.Context)  {
 func (h *userHandler) FindUserById(c *gin.Context) {
 	var user entity.User
 
-	// Retrieve and check the user_id claim from the JWT claims
 	claimsRaw, ok := c.Get("claims")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -156,30 +155,10 @@ func (h *userHandler) FindUserById(c *gin.Context) {
 		return
 	}
 
-	var userIdStr string
-	switch userId := userIdRaw.(type) {
-	case float64:
-		// Convert float64 to string
-		userIdStr = strconv.FormatFloat(userId, 'f', -1, 64)
-	case string:
-		// Use the string as is
-		userIdStr = userId
-	default:
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "User ID in JWT claims is not a valid type",
-		})
-		return
-	}
-
-	userIdInt, err := strconv.Atoi(userIdStr)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid User ID format in JWT claims",
-		})
-		return
-	}
+	userIdStr := fmt.Sprintf("%v", userIdRaw)
+	userIdInt, _ := strconv.Atoi(userIdStr)
 	
-	user, err = h.userUsecase.FindUserById(userIdInt)
+	user, err := h.userUsecase.FindUserById(userIdInt)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "User not found",
