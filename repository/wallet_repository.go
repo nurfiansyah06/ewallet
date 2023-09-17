@@ -22,22 +22,36 @@ func (r *repository) GenerateNumberAcoount(wallet entity.Wallet) (entity.Wallet,
 	return wallet, err
 }
 
-func (r *repository) TopUpWallet(wallet dto.Wallet) (dto.Wallet, error) {	
-	var amountWallet entity.Wallet
+func (r *repository) TopUpWallet(wallet dto.Wallet) (entity.Wallet, error) {	
+	var existingWallet entity.Wallet
 
-	r.db.First(&amountWallet, "wallet_id = ?", wallet.WalletId)
+    // Retrieve the wallet record based on user_id
+    if err := r.db.Where("user_id = ?", wallet.UserId).First(&existingWallet).Error; err != nil {
+        // Handle the error if the wallet record is not found
+        if err != nil {
+            return entity.Wallet{}, fmt.Errorf("wallet not found for user with ID")
+        }
+        // Handle other database errors
+        return entity.Wallet{}, err
+    }
 
-	updatedWallet := dto.Wallet{
-		WalletId:    wallet.WalletId,
-		Amount:      amountWallet.Amount + wallet.Amount,
-		SourceFund:  wallet.SourceFund,
-	}
-	
-	result := r.db.Model(&dto.Wallet{}).Where("wallet_id = ?", wallet.WalletId).Updates(updatedWallet)
-	if result.Error != nil {
-		fmt.Println("Error updating wallet:", result.Error)
-		return dto.Wallet{}, result.Error
-	}
+    // Calculate the updated amount by adding the new amount to the existing amount
+    updatedAmount := existingWallet.Amount + wallet.Amount
 
-	return updatedWallet, result.Error
+    // Create an updated wallet DTO with the new amount
+    updatedWallet := entity.Wallet{
+        WalletId:    wallet.WalletId,
+        Amount:      updatedAmount,
+        SourceFund:  wallet.SourceFund,
+        UserId: wallet.UserId, // Make sure to include the user ID
+    }
+
+    // Update the wallet record in the database
+    if err := r.db.Model(&entity.Wallet{}).Where("user_id = ?", wallet.UserId).Updates(updatedWallet).Error; err != nil {
+        // Handle the error if the update fails
+        return entity.Wallet{}, err
+    }
+
+    // Return the updated wallet DTO and nil error to indicate success
+    return updatedWallet, nil
 }

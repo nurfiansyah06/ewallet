@@ -19,9 +19,9 @@ func SetupRoutes() {
 	userUsecase := usecase.NewUsecase(userRepository)
 	userHandler := handler.NewUserHandler(userUsecase)
 	
-	walletRepository := repository.NewWalletRepository(db)
-	walletUsecase := usecase.NewWalletUsecase(walletRepository)
-	walletHandler := handler.NewWalletHandler(walletUsecase)
+	// walletRepository := repository.NewWalletRepository(db)
+	// walletUsecase := usecase.NewWalletUsecase(walletRepository)
+	// walletHandler := handler.NewWalletHandler(walletUsecase)
 
 	transactionRepository := repository.NewRepository(db)
 	transactionUsecase := usecase.NewTransactionUsecase(transactionRepository)
@@ -38,7 +38,7 @@ func SetupRoutes() {
 	router.POST("/reset", userHandler.ResetPassword)
 
 	router.GET("/profile", middleware.Authenticate(), userHandler.FindUserById)
-	router.PUT("/topup/:wallet_id", middleware.Authenticate(), walletHandler.TopUpWallet)
+	// router.PUT("/topup", middleware.Authenticate(), walletHandler.TopUpWallet)
 	router.POST("/transaction/:id", transactionHandler.AddAmount)
 
 	router.Run(":8888")

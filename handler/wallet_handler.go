@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 )
 
 type walletHandler struct {
@@ -19,7 +20,30 @@ func NewWalletHandler(usecase usecase.WalletUsecase) *walletHandler {
 }
 
 func (h *walletHandler) TopUpWallet(c *gin.Context) {
-	var wallet dto.Wallet
+	var (
+		wallet dto.Wallet
+	) 
+
+	claimsRaw, _ := c.Get("claims")
+	claims, ok := claimsRaw.(jwt.MapClaims)
+	userIdRaw, ok := claims["user_id"]
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID not found in JWT claims",
+		})
+		return
+	}
+
+	userIdStr := fmt.Sprintf("%v", userIdRaw)
+	userIdInt, _ := strconv.Atoi(userIdStr)
+
+	walletId, _ := strconv.Atoi(c.Param("wallet_id"))
+	newWallets := dto.Wallet{
+		WalletId: walletId,
+		Amount: wallet.Amount,
+		SourceFund: wallet.SourceFund,
+		UserId: userIdInt,
+	}	
 
 	if err := c.ShouldBindJSON(&wallet); err != nil {
 		fmt.Println("Error binding JSON:", err)
@@ -27,16 +51,16 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 		return
 	}
 	
-	walletId, _ := strconv.Atoi(c.Param("wallet_id"))
-	newWallets := dto.Wallet{
-		WalletId: walletId,
-		Amount: wallet.Amount,
-		SourceFund: wallet.SourceFund,
-	}
+	// walletId, _ := strconv.Atoi(c.Param("wallet_id"))
+	// newWallets := dto.Wallet{
+	// 	WalletId: walletId,
+	// 	Amount: wallet.Amount,
+	// 	SourceFund: wallet.SourceFund,
+	// }
 
 	newWallet, err := h.walletUsecase.TopUpWallet(newWallets)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
 		return
@@ -46,34 +70,4 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 		"response": "success",
 		"wallet":    newWallet,
 	})
-
-// 	walletId := c.Param("id")
-
-// 	walletIntId, _ := strconv.Atoi(walletId)
-
-// 	walletUpdate := dto.WalletRequest{
-// 		WalletId:         walletIntId,
-// 		Amount:     newWallet.Amount,
-// 		SourceFund: newWallet.SourceFund,
-// 	}
-
-// 	walletResponse := dto.WalletResponse{
-// 		WalletId: walletIntId,
-// 		Amount: newWallet.Amount,
-// 		SourceFund: newWallet.SourceFund,
-// 	}
-
-// 	wallet, err := h.walletUsecase.TopUpWallet(walletResponse)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{
-// 			"error": err,
-// 		})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusCreated, gin.H{
-// 		"response": "success",
-// 		"wallet":   wallet,
-// 	})
-// }
 }

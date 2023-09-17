@@ -32,7 +32,6 @@ func (r *repository) Register(user dto.UserRequest) (entity.User, error) {
 	
 	newUser := entity.User{
 		Email: user.Email,
-		Name: user.Name,
 		Password: password, 
 	}
 
