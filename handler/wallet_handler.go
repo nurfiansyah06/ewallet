@@ -20,9 +20,7 @@ func NewWalletHandler(usecase usecase.WalletUsecase) *walletHandler {
 }
 
 func (h *walletHandler) TopUpWallet(c *gin.Context) {
-	var (
-		wallet dto.Wallet
-	) 
+	var wallet dto.Wallet
 
 	claimsRaw, _ := c.Get("claims")
 	claims, ok := claimsRaw.(jwt.MapClaims)
@@ -37,9 +35,7 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 	userIdStr := fmt.Sprintf("%v", userIdRaw)
 	userIdInt, _ := strconv.Atoi(userIdStr)
 
-	walletId, _ := strconv.Atoi(c.Param("wallet_id"))
 	newWallets := dto.Wallet{
-		WalletId: walletId,
 		Amount: wallet.Amount,
 		SourceFund: wallet.SourceFund,
 		UserId: userIdInt,
@@ -51,13 +47,6 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 		return
 	}
 	
-	// walletId, _ := strconv.Atoi(c.Param("wallet_id"))
-	// newWallets := dto.Wallet{
-	// 	WalletId: walletId,
-	// 	Amount: wallet.Amount,
-	// 	SourceFund: wallet.SourceFund,
-	// }
-
 	newWallet, err := h.walletUsecase.TopUpWallet(newWallets)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{

@@ -31,6 +31,7 @@ func (r *repository) Register(user dto.UserRequest) (entity.User, error) {
 	password, _ := helper.HashPassword(user.Password)
 	
 	newUser := entity.User{
+		Name: user.Name,
 		Email: user.Email,
 		Password: password, 
 	}
@@ -43,7 +44,7 @@ func (r *repository) Register(user dto.UserRequest) (entity.User, error) {
 	currentAutoIncrement := 1
 	
 	newWallet := entity.Wallet{
-		WalletNumber: generateWalletNumber(777, currentAutoIncrement),
+		WalletNumber: generateWalletNumber(777, currentAutoIncrement+1),
 		Amount: 0,
 		UserId:       newUser.UserId,
 	}
