@@ -21,7 +21,7 @@ func SetupRoutes() {
 
 	walletRepository := repository.NewWalletRepository(db)
 	walletUsecase := usecase.NewWalletUsecase(walletRepository)
-	walletHandler := handler.NewWalletHandler(walletUsecase)
+	walletHandler := handler.NewWalletHandler(walletUsecase, userUsecase)
 
 	transactionRepository := repository.NewRepository(db)
 	transactionUsecase := usecase.NewTransactionUsecase(transactionRepository)

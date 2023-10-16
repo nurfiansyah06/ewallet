@@ -13,10 +13,14 @@ import (
 
 type walletHandler struct {
 	walletUsecase usecase.WalletUsecase
+	userUsecase		usecase.UserUsecase
 }
 
-func NewWalletHandler(usecase usecase.WalletUsecase) *walletHandler {
-	return &walletHandler{usecase}
+func NewWalletHandler(usecase usecase.WalletUsecase, userUsecase usecase.UserUsecase) *walletHandler {
+	return &walletHandler{
+		walletUsecase: usecase,
+		userUsecase:   userUsecase,
+	}
 }
 
 func (h *walletHandler) TopUpWallet(c *gin.Context) {
@@ -35,13 +39,25 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 	userIdStr := fmt.Sprintf("%v", userIdRaw)
 	userIdInt, _ := strconv.Atoi(userIdStr)
 
+	userId, err := h.userUsecase.FindUserById(userIdInt)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "User not found",
+		})
+
+		return
+	}
+
+	// fmt.Println(wallet.Amount)
+	fmt.Println(userId.UserId)
 	newWallets := dto.Wallet{
 		Amount: wallet.Amount,
 		SourceFund: wallet.SourceFund,
-		UserId: userIdInt,
+		UserId: userId.UserId,
 	}	
 
-	if err := c.ShouldBindJSON(&wallet); err != nil {
+	fmt.Println(newWallets.Amount)
+	if err := c.ShouldBindJSON(&newWallets); err != nil {
 		fmt.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

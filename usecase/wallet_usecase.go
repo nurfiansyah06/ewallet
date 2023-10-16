@@ -19,12 +19,7 @@ func NewWalletUsecase(repository repository.WalletRepository) WalletUsecase {
 }
 
 func (u *walletusecase) TopUpWallet(wallet dto.Wallet) (entity.WalletResponse, error) {
-	updatedWallet := dto.Wallet{
-		Amount:     wallet.Amount,
-		SourceFund: wallet.SourceFund,
-	}
-
-	newWallet, err := u.repository.TopUpWallet(updatedWallet)
+	newWallet, err := u.repository.TopUpWallet(wallet)
 
 	if err != nil {
 		return newWallet, err

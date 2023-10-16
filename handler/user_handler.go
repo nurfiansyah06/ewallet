@@ -83,22 +83,13 @@ func (h *userHandler) Login(c *gin.Context) {
 		})
 	}
 
-	// user_id := loginRequest.
-    // token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-    //     "user_id": email,
-    //     "exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expiration time
-    // })
-
-    // In a real-world scenario, replace with a secure secret
-    // tokenString, _ := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
-
 	token, err := middleware.AuthMiddleware(userId.UserId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"err": err,
 		})
 	}
-    // c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
 		"token": token,

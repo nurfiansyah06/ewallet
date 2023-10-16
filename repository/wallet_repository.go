@@ -30,11 +30,9 @@ func (r *walletRepository) TopUpWallet(wallet dto.Wallet) (entity.WalletResponse
 		return entity.WalletResponse{}, err
 	}
 
-	// updatedAmount := existingWallet.Amount + wallet.Amount
-
 	updatedWallet := entity.WalletResponse{
-        SourceFund: existingWallet.SourceFund,
-		Amount:     wallet.Amount,
+        SourceFund: wallet.SourceFund,
+		Amount:     existingWallet.Amount + wallet.Amount,
         WalletNumber: existingWallet.WalletNumber,
 	}
 
