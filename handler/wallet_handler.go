@@ -5,10 +5,8 @@ import (
 	"ewalletgolang/usecase"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 )
 
 type walletHandler struct {
@@ -26,20 +24,10 @@ func NewWalletHandler(usecase usecase.WalletUsecase, userUsecase usecase.UserUse
 func (h *walletHandler) TopUpWallet(c *gin.Context) {
 	var wallet dto.Wallet
 
-	claimsRaw, _ := c.Get("claims")
-	claims, ok := claimsRaw.(jwt.MapClaims)
-	userIdRaw, ok := claims["user_id"]
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "User ID not found in JWT claims",
-		})
-		return
-	}
+	userIdInt, _ := c.Get("user_id")
+	userId, _ := userIdInt.(int)
 
-	userIdStr := fmt.Sprintf("%v", userIdRaw)
-	userIdInt, _ := strconv.Atoi(userIdStr)
-
-	userId, err := h.userUsecase.FindUserById(userIdInt)
+	_, err := h.userUsecase.FindUserById(userId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "User not found",
@@ -48,15 +36,12 @@ func (h *walletHandler) TopUpWallet(c *gin.Context) {
 		return
 	}
 
-	// fmt.Println(wallet.Amount)
-	fmt.Println(userId.UserId)
 	newWallets := dto.Wallet{
-		Amount: wallet.Amount,
+		Balance: wallet.Balance,
 		SourceFund: wallet.SourceFund,
-		UserId: userId.UserId,
+		UserId: userId,
 	}	
 
-	fmt.Println(newWallets.Amount)
 	if err := c.ShouldBindJSON(&newWallets); err != nil {
 		fmt.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

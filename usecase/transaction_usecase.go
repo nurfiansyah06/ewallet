@@ -19,7 +19,7 @@ func NewTransactionUsecase(repository repository.TransactionRepository) Transact
 }
 
 func (u *transactionusecase) AddAmount(transaction dto.TransactionRequest) (entity.Transaction, error) {
-	newTransaction, err := u.repository.AddAmount(transaction)
+	newTransaction, err := u.repository.TransferAmount(transaction)
 
 	if err != nil {
 		return newTransaction, err

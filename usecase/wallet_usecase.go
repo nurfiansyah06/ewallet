@@ -8,6 +8,7 @@ import (
 
 type WalletUsecase interface {
 	TopUpWallet(wallet dto.Wallet) (entity.WalletResponse, error)
+	FindUserById(userId int) (entity.WalletResponse, error)
 }
 
 type walletusecase struct {
@@ -26,4 +27,13 @@ func (u *walletusecase) TopUpWallet(wallet dto.Wallet) (entity.WalletResponse, e
 	}
 
 	return newWallet, nil
+}
+
+func (u *walletusecase) FindUserById(userId int) (entity.WalletResponse, error)  {
+	user, err := u.repository.FindWalletByUserId(userId)
+	if err != nil {
+		return entity.WalletResponse{}, err
+	}
+
+	return user, nil
 }

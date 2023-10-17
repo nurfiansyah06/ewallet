@@ -45,7 +45,7 @@ func (r *repository) Register(user dto.UserRequest) (entity.User, error) {
 	
 	newWallet := entity.Wallet{
 		WalletNumber: generateWalletNumber(777, currentAutoIncrement+1),
-		Amount: 0,
+		Balance: 0,
 		UserId:       newUser.UserId,
 	}
 
@@ -101,7 +101,7 @@ func (r *repository) FindByEmail(email string) (entity.User, error) {
 func (r *repository) FindUserById(userId int) (entity.User, error) {
 	var user entity.User
 
-	err := r.db.Where("user_id = ?", userId).First(&user).Error
+	err := r.db.Preload("Wallet").Where("user_id = ?", userId).First(&user).Error
 	if err != nil {
 		return user, errors.New("no user found on with that ID")
 	}

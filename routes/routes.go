@@ -39,7 +39,7 @@ func SetupRoutes() {
 
 	router.GET("/profile", middleware.Authenticate(), userHandler.FindUserById)
 	router.PUT("/topup", middleware.Authenticate(), walletHandler.TopUpWallet)
-	router.POST("/transaction/:id", transactionHandler.AddAmount)
+	router.POST("/transaction", middleware.Authenticate() ,transactionHandler.AddAmount)
 
 	router.Run(":8888")
 }

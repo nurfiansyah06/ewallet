@@ -70,45 +70,48 @@ func Authenticate() gin.HandlerFunc {
     return func(c *gin.Context) {
        authHeader := c.GetHeader("Authorization")
 
-	   if !strings.Contains(authHeader, "Bearer") {
-		   c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-		   return
-	   }
+       if !strings.Contains(authHeader, "Bearer") {
+           c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+           return
+       }
 
-	   tokenString := ""
-	   resultToken := strings.Split(authHeader, " ")
-	   if len(resultToken) == 2 {
-			tokenString	= resultToken[1]
-	   }
+       tokenString := ""
+       resultToken := strings.Split(authHeader, " ")
+       if len(resultToken) == 2 {
+           tokenString = resultToken[1]
+       }
 
-	   token, err := ValidateToken(tokenString)
-	   if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-			return
-	   }
+       token, err := ValidateToken(tokenString)
+       if err != nil {
+           c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+           return
+       }
 
-	   claim, ok := token.Claims.(jwt.MapClaims)
-	   if !ok || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-			return
-	   }
+       claim, ok := token.Claims.(jwt.MapClaims)
+       if !ok || !token.Valid {
+           c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+           return
+       }
 
-	   userId := int(claim["user_id"].(float64))
+       userId := int(claim["user_id"].(float64))
 
-	   db := db.ConnectDB()
+       db := db.ConnectDB()
 
-	   userRepo := repository.NewRepository(db)
-	   userUsecase := usecase.NewUsecase(userRepo)
-	   user, err := usecase.UserUsecase.FindUserById(userUsecase, userId)
+       userRepo := repository.NewRepository(db)
+       userUsecase := usecase.NewUsecase(userRepo)
+       user, err := usecase.UserUsecase.FindUserById(userUsecase, userId)
 
-	   if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-			return
-	   }
+       if err != nil {
+           c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+           return
+       }
 
-	   c.Set("currentUser", user)
-	   c.Set("claims", claim)
+       c.Set("user_id", userId) // Set "user_id" in the context
 
-	   c.Next()
-	}
+       // You can also set "currentUser" and "claims" in the context if needed
+       c.Set("currentUser", user)
+       c.Set("claims", claim)
+
+       c.Next()
+    }
 }

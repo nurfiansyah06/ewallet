@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
-	"github.com/golang-jwt/jwt"
 )
 
 type userHandler struct {
@@ -122,26 +121,10 @@ func (h *userHandler) ResetPassword(c *gin.Context)  {
 func (h *userHandler) FindUserById(c *gin.Context) {
 	var user entity.User
 
-	claimsRaw, ok := c.Get("claims")
+	userIdRaw, ok := c.Get("user_id")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "JWT claims not found in context",
-		})
-		return
-	}
-
-	claims, ok := claimsRaw.(jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid JWT claims format in context",
-		})
-		return
-	}
-
-	userIdRaw, ok := claims["user_id"]
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "User ID not found in JWT claims",
+			"error": "User ID not found in context",
 		})
 		return
 	}

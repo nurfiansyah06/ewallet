@@ -10,6 +10,7 @@ import (
 
 type WalletRepository interface {
 	TopUpWallet(wallet dto.Wallet) (entity.WalletResponse, error)
+	FindWalletByUserId(userId int) (entity.WalletResponse, error)
 }
 
 type walletRepository struct {
@@ -32,7 +33,7 @@ func (r *walletRepository) TopUpWallet(wallet dto.Wallet) (entity.WalletResponse
 
 	updatedWallet := entity.WalletResponse{
         SourceFund: wallet.SourceFund,
-		Amount:     existingWallet.Amount + wallet.Amount,
+		Balance:     existingWallet.Balance + wallet.Balance,
         WalletNumber: existingWallet.WalletNumber,
 	}
 
@@ -41,4 +42,12 @@ func (r *walletRepository) TopUpWallet(wallet dto.Wallet) (entity.WalletResponse
 	}
 
 	return updatedWallet, nil
+}
+
+func (r *walletRepository) FindWalletByUserId(userId int) (entity.WalletResponse, error)  {
+	if err := r.db.Where("user_id = ?", userId).First(&entity.Wallet{}).Error; err != nil {
+		return entity.WalletResponse{}, err		
+	}
+
+	return entity.WalletResponse{}, nil
 }
